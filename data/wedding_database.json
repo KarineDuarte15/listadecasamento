@@ -8,7 +8,7 @@
       "quantity_available": 2,
       "status": "disponivel",
       "created_at": "2026-09-11T14:46:43.039Z",
-      "updated_at": "2026-09-11T14:46:43.039Z"
+      "updated_at": "2026-09-12T01:24:59.023Z"
     },
     {
       "id": "ut-2",
@@ -18,7 +18,7 @@
       "quantity_available": 1,
       "status": "disponivel",
       "created_at": "2026-09-11T14:46:43.039Z",
-      "updated_at": "2026-09-11T14:46:43.039Z"
+      "updated_at": "2026-09-12T01:22:46.266Z"
     },
     {
       "id": "ut-3",
