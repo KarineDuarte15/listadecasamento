@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion'; // Ajustado para framer-motion padrão, se usar a biblioteca motion/react, mantenha a sua importação
 import { X, Gift as GiftIcon, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { Gift } from '../types';
 import { supabase } from '../supabase';
@@ -48,7 +48,6 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
 
     setSubmitting(true);
 
-    // Agrupamos os dados usando as variáveis de estado (useState) que já existem
     const reservationData = {
       name: name,
       email: email,
@@ -57,11 +56,14 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
     };
 
     try {
-      // Atualiza o item na tabela 'presentes', marcando como indisponível e salvando os dados
+      // Calcula a nova quantidade disponível impedindo que fique negativa
+      const novaQuantidade = Math.max(0, (gift.quantity_available || 1) - 1);
+
+      // Atualiza usando as colunas corretas da nossa nova tabela SQL
       const { error } = await supabase
         .from('presentes')
         .update({
-          disponivel: false,
+          quantidade_disponivel: novaQuantidade,
           reservado_por: reservationData.name,
           email_convidado: reservationData.email,
           telefone_convidado: reservationData.phone
@@ -70,17 +72,15 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
 
       if (error) throw error;
 
-      // Passa os dados da reserva para a tela de sucesso
       onSuccess(reservationData); 
 
-      // Abre o WhatsApp da noiva com a mensagem pronta usando a propriedade correta (gift.name)
       const mensagem = `Olá Bruna! Escolhi presentear vocês com: ${gift.name}.`;
       window.open(`https://wa.me/558589103367?text=${encodeURIComponent(mensagem)}`, '_blank');
 
     } catch (err) {
       console.error("Erro ao reservar:", err);
       setErrorMessage('Erro de conexão ao enviar dados. Por favor, tente novamente.');
-      setSubmitting(false);
+      setSubmitting(false); // Libera o botão novamente
     }
   };
 
@@ -94,7 +94,6 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
           onClick={(e) => e.stopPropagation()}
           className="relative max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-[#D5E3F0] text-left"
         >
-          {/* Close button */}
           <button
             onClick={onClose}
             disabled={submitting}
@@ -104,7 +103,6 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
             <X className="w-5 h-5" />
           </button>
 
-          {/* Header */}
           <div className="text-center mb-6">
             <div className="w-12 h-12 rounded-full bg-[#EAF3FA] text-[#345A82] flex items-center justify-center mx-auto mb-3">
               <GiftIcon className="w-6 h-6" />
@@ -120,7 +118,6 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
             </span>
           </div>
 
-          {/* Error notification */}
           {errorMessage && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
@@ -132,7 +129,6 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
             </motion.div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-[#334D66] mb-1">
@@ -193,7 +189,6 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
               />
             </div>
 
-            {/* Checkbox */}
             <div className="pt-2">
               <label className="flex items-start gap-2.5 cursor-pointer select-none">
                 <input
@@ -210,7 +205,6 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
               </label>
             </div>
 
-            {/* Privacy notice */}
             <div className="p-3 rounded-xl bg-[#F4F8FC] border border-[#D9E7F4] flex items-start gap-2 text-[11px] text-[#597591]">
               <ShieldCheck className="w-4 h-4 text-[#406894] shrink-0 mt-0.5" />
               <p>
@@ -218,7 +212,6 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
               </p>
             </div>
 
-            {/* Submit button */}
             <button
               type="submit"
               disabled={submitting}

@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../supabase';
 import { Loader2, Lock, LogOut, CheckCircle, XCircle } from 'lucide-react';
 
 interface DBGift {
   id: string;
   nome_presente: string;
-  disponivel: boolean;
+  categoria: string;
+  quantidade_total: number;
+  quantidade_disponivel: number;
   reservado_por: string | null;
   telefone_convidado: string | null;
   email_convidado: string | null;
@@ -21,7 +23,6 @@ export const AdminDashboard = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Valida a senha usando a variável de ambiente (Vercel ou .env)
     if (password === import.meta.env.VITE_ADMIN_SECRET) {
       setIsAuthenticated(true);
       setError('');
@@ -43,9 +44,20 @@ export const AdminDashboard = () => {
 
       if (data) {
         setGifts(data);
-        const total = data.length;
-        const reservados = data.filter(g => !g.disponivel).length;
-        setStats({ total, reservados, disponiveis: total - reservados });
+        
+        let total = 0;
+        let disponiveis = 0;
+        
+        data.forEach(g => {
+          total += g.quantidade_total;
+          disponiveis += g.quantidade_disponivel;
+        });
+        
+        setStats({ 
+          total, 
+          disponiveis, 
+          reservados: total - disponiveis 
+        });
       }
     } catch (err) {
       console.error("Erro ao buscar presentes:", err);
@@ -82,10 +94,7 @@ export const AdminDashboard = () => {
               />
             </div>
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-            <button
-              type="submit"
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors"
-            >
+            <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors">
               Entrar no Painel
             </button>
           </form>
@@ -102,41 +111,30 @@ export const AdminDashboard = () => {
             <h1 className="text-3xl font-serif text-slate-800">Painel dos Noivos</h1>
             <p className="text-slate-500 mt-1">Gerencie a lista de presentes</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            Sair
+          <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+            <LogOut className="w-4 h-4" /> Sair
           </button>
         </header>
 
-        {/* Estatísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <p className="text-sm font-medium text-slate-500">Total de Presentes</p>
+            <p className="text-sm font-medium text-slate-500">Unidades Totais</p>
             <p className="text-4xl font-bold text-slate-800 mt-2">{stats.total}</p>
           </div>
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 bg-emerald-50/30">
-            <p className="text-sm font-medium text-emerald-600">Reservados</p>
+            <p className="text-sm font-medium text-emerald-600">Unidades Reservadas</p>
             <p className="text-4xl font-bold text-emerald-700 mt-2">{stats.reservados}</p>
           </div>
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-blue-100 bg-blue-50/30">
-            <p className="text-sm font-medium text-blue-600">Disponíveis</p>
+            <p className="text-sm font-medium text-blue-600">Unidades Disponíveis</p>
             <p className="text-4xl font-bold text-blue-700 mt-2">{stats.disponiveis}</p>
           </div>
         </div>
 
-        {/* Tabela de Presentes */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center">
             <h2 className="text-xl font-bold text-slate-800">Status das Reservas</h2>
-            <button 
-              onClick={fetchGifts}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Atualizar dados
-            </button>
+            <button onClick={fetchGifts} className="text-sm text-blue-600 hover:text-blue-700 font-medium">Atualizar dados</button>
           </div>
           
           <div className="overflow-x-auto">
@@ -150,8 +148,8 @@ export const AdminDashboard = () => {
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100 text-sm text-slate-500">
                     <th className="p-4 font-medium">Presente</th>
-                    <th className="p-4 font-medium">Status</th>
-                    <th className="p-4 font-medium">Convidado</th>
+                    <th className="p-4 font-medium">Estoque</th>
+                    <th className="p-4 font-medium">Último Convidado</th>
                     <th className="p-4 font-medium">Contato</th>
                   </tr>
                 </thead>
@@ -160,19 +158,17 @@ export const AdminDashboard = () => {
                     <tr key={gift.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="p-4 font-medium text-slate-800">{gift.nome_presente}</td>
                       <td className="p-4">
-                        {gift.disponivel ? (
+                        {gift.quantidade_disponivel > 0 ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
-                            <CheckCircle className="w-3.5 h-3.5" /> Disponível
+                            <CheckCircle className="w-3.5 h-3.5" /> {gift.quantidade_disponivel} Disponíveis
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium">
-                            <XCircle className="w-3.5 h-3.5" /> Reservado
+                            <XCircle className="w-3.5 h-3.5" /> Esgotado
                           </span>
                         )}
                       </td>
-                      <td className="p-4 text-sm text-slate-600">
-                        {gift.reservado_por || '-'}
-                      </td>
+                      <td className="p-4 text-sm text-slate-600">{gift.reservado_por || '-'}</td>
                       <td className="p-4 text-sm text-slate-600">
                         {gift.telefone_convidado ? (
                           <div className="flex flex-col">
@@ -183,13 +179,6 @@ export const AdminDashboard = () => {
                       </td>
                     </tr>
                   ))}
-                  {gifts.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="p-8 text-center text-slate-500">
-                        Nenhum presente registrado na base de dados.
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             )}

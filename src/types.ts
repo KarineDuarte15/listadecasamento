@@ -7,16 +7,6 @@ export type GiftCategory =
   | 'Eletroportáteis'
   | 'Outros itens para casa';
 
-export interface Gift {
-  id: string;
-  name: string;
-  category: GiftCategory;
-  quantity_total: number;
-  quantity_available: number;
-  status: 'disponivel' | 'esgotado';
-  created_at?: string;
-  updated_at?: string;
-}
 
 export interface GiftReservation {
   id: string;
@@ -28,7 +18,16 @@ export interface GiftReservation {
   guest_phone: string;
   message?: string;
   reserved_at: string;
-  status: 'RESERVADO' | 'CANCELADO';
+  status: 'disponivel' | 'esgotado';
+}
+
+export interface Gift {
+  id: string;
+  name: string;
+  category: string;
+  status: 'disponivel' | 'esgotado';
+  quantity_total: number;
+  quantity_available: number;
 }
 
 export interface ReservationPayload {
