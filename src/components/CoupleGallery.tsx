@@ -19,7 +19,7 @@ export const CoupleGallery = () => {
           <img
             src="/foto-casal.jpeg"
             alt="Bruna e Riclaube"
-            className="w-full h-auto max-h-[600px] object-cover object-top rounded-xl"
+            className="w-full h-auto object-contain rounded-xl"
           />
           <div className="mt-6 mb-2 text-slate-700 font-serif text-xl">
             Bruna & Riclaube
