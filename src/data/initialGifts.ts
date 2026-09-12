@@ -1,6 +1,9 @@
 import { Gift } from '../types';
 
-export const INITIAL_GIFTS: Omit<Gift, 'status'>[] = [
+// Exportamos a lista completa de presentes com as categorias e quantidades definidas.
+// Utilizamos Partial<Gift> para evitar erros caso a sua interface Gift original 
+// não possua as propriedades de quantidade (quantity_total).
+export const INITIAL_GIFTS: Partial<Gift>[] = [
   // UTENSÍLIOS DE COZINHA
   { id: 'ut-1', name: 'Jogo de panelas', category: 'Utensílios de cozinha', quantity_total: 2, quantity_available: 2 },
   { id: 'ut-2', name: 'Panela de pressão', category: 'Utensílios de cozinha', quantity_total: 1, quantity_available: 1 },
@@ -95,9 +98,12 @@ export const INITIAL_GIFTS: Omit<Gift, 'status'>[] = [
   { id: 'out-10', name: 'Gaveteiro 3 gavetas', category: 'Outros itens para casa', quantity_total: 1, quantity_available: 1 }
 ];
 
-export function getInitialGiftsWithStatus(): Gift[] {
+// Função que calcula o status dinamicamente com base na quantidade disponível
+export function getInitialGiftsWithStatus(): Partial<Gift>[] {
   return INITIAL_GIFTS.map(item => ({
     ...item,
-    status: item.quantity_available > 0 ? 'disponivel' : 'esgotado'
+    // Se a quantidade disponível for maior que 0, está disponível, senão esgotado.
+    // O operador '?? 0' protege o código caso a variável venha vazia.
+    status: (item.quantity_available ?? 0) > 0 ? 'disponivel' : 'esgotado'
   }));
 }
