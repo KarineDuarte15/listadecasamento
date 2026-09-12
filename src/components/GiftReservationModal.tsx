@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Gift as GiftIcon, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
-import { Gift, ReservationPayload } from '../types';
+import { Gift } from '../types';
+import { supabase } from '../supabase';
 
 interface GiftReservationModalProps {
   gift: Gift | null;
@@ -47,34 +48,37 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
 
     setSubmitting(true);
 
-    const payload: ReservationPayload = {
-      gift_id: gift.id,
-      guest_name: name,
-      guest_email: email,
-      guest_phone: phone,
-      message,
-      confirmation: confirmed,
+    // Agrupamos os dados usando as variáveis de estado (useState) que já existem
+    const reservationData = {
+      name: name,
+      email: email,
+      phone: phone,
+      message: message
     };
 
     try {
-      const response = await fetch('/api/reservations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      // Atualiza o item na tabela 'presentes', marcando como indisponível e salvando os dados
+      const { error } = await supabase
+        .from('presentes')
+        .update({
+          disponivel: false,
+          reservado_por: reservationData.name,
+          email_convidado: reservationData.email,
+          telefone_convidado: reservationData.phone
+        })
+        .eq('id', gift.id);
 
-      const data = await response.json();
+      if (error) throw error;
 
-      if (!response.ok) {
-        setErrorMessage(data.error || 'Não foi possível registrar o presente. Tente novamente.');
-        setSubmitting(false);
-        return;
-      }
+      // Passa os dados da reserva para a tela de sucesso
+      onSuccess(reservationData); 
 
-      onSuccess(data);
+      // Abre o WhatsApp da noiva com a mensagem pronta usando a propriedade correta (gift.name)
+      const mensagem = `Olá Bruna! Escolhi presentear vocês com: ${gift.name}.`;
+      window.open(`https://wa.me/558589103367?text=${encodeURIComponent(mensagem)}`, '_blank');
+
     } catch (err) {
+      console.error("Erro ao reservar:", err);
       setErrorMessage('Erro de conexão ao enviar dados. Por favor, tente novamente.');
       setSubmitting(false);
     }
@@ -206,7 +210,7 @@ export const GiftReservationModal: React.FC<GiftReservationModalProps> = ({
               </label>
             </div>
 
-            {/* Privacy notice (Section 22) */}
+            {/* Privacy notice */}
             <div className="p-3 rounded-xl bg-[#F4F8FC] border border-[#D9E7F4] flex items-start gap-2 text-[11px] text-[#597591]">
               <ShieldCheck className="w-4 h-4 text-[#406894] shrink-0 mt-0.5" />
               <p>
