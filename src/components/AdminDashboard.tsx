@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabase';
-import { Loader2, Lock, LogOut, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, Lock, LogOut, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 
 interface DBGift {
   id: string;
@@ -64,6 +64,43 @@ export const AdminDashboard = () => {
       setError('Falha ao carregar os dados do banco.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelReservation = async (gift: DBGift) => {
+    // Alerta de confirmação para evitar cliques acidentais
+    if (!window.confirm(`Tem certeza que deseja excluir a reserva e liberar uma unidade de: ${gift.nome_presente}?`)) {
+      return;
+    }
+
+    // Calcula a nova quantidade, garantindo que não ultrapasse o total original
+    const novaQuantidade = Math.min(gift.quantidade_disponivel + 1, gift.quantidade_total);
+
+    // Prepara os dados para enviar ao Supabase
+    const updateData: Partial<DBGift> = {
+      quantidade_disponivel: novaQuantidade
+    };
+
+    // Se o estoque foi totalmente restaurado, limpamos os rastros do convidado
+    if (novaQuantidade === gift.quantidade_total) {
+      updateData.reservado_por = null;
+      updateData.email_convidado = null;
+      updateData.telefone_convidado = null;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('presentes')
+        .update(updateData)
+        .eq('id', gift.id);
+
+      if (error) throw error;
+      
+      // Recarrega a tabela imediatamente para mostrar a mudança
+      fetchGifts();
+    } catch (err) {
+      console.error("Erro ao liberar presente:", err);
+      alert("Erro de conexão ao tentar liberar o presente.");
     }
   };
 
@@ -151,6 +188,7 @@ export const AdminDashboard = () => {
                     <th className="p-4 font-medium">Estoque</th>
                     <th className="p-4 font-medium">Último Convidado</th>
                     <th className="p-4 font-medium">Contato</th>
+                    <th className="p-4 font-medium text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -176,6 +214,17 @@ export const AdminDashboard = () => {
                             <span className="text-xs text-slate-400">{gift.email_convidado}</span>
                           </div>
                         ) : '-'}
+                      </td>
+                      <td className="p-4 text-center">
+                        {gift.quantidade_disponivel < gift.quantidade_total && (
+                          <button
+                            onClick={() => handleCancelReservation(gift)}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Excluir reserva e liberar presente"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

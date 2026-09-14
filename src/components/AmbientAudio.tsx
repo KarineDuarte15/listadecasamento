@@ -1,112 +1,47 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, VolumeX, Music } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Music, VolumeX } from 'lucide-react';
 
-export const AmbientAudio: React.FC = () => {
+export const AmbientAudio = () => {
+  // Estados para controlar se a música está tocando ou pausada
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const intervalRef = useRef<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Soft ambient chord notes for gentle romantic wedding melody
-  const melodyNotes = [
-    261.63, // C4
-    329.63, // E4
-    392.00, // G4
-    523.25, // C5
-    392.00, // G4
-    329.63, // E4
-    293.66, // D4
-    349.23, // F4
-    440.00, // A4
-    523.25, // C5
-    440.00, // A4
-    349.23, // F4
-  ];
-
-  const playTone = (freq: number) => {
-    if (!audioContextRef.current) return;
-    const ctx = audioContextRef.current;
-    if (ctx.state === 'suspended') {
-      ctx.resume();
-    }
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-
-    gain.gain.setValueAtTime(0.001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.035, ctx.currentTime + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start();
-    osc.stop(ctx.currentTime + 1.9);
-  };
-
-  const toggleMusic = () => {
-    if (!isPlaying) {
-      if (!audioContextRef.current) {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        audioContextRef.current = new AudioCtx();
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        // Tenta iniciar a música e lida com bloqueios do navegador
+        audioRef.current.play().catch(error => {
+          console.error("O navegador bloqueou a reprodução automática:", error);
+        });
       }
-
-      if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
-      }
-
-      let noteIndex = 0;
-      playTone(melodyNotes[0]);
-
-      intervalRef.current = window.setInterval(() => {
-        noteIndex = (noteIndex + 1) % melodyNotes.length;
-        playTone(melodyNotes[noteIndex]);
-      }, 1400);
-
-      setIsPlaying(true);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      setIsPlaying(false);
+      setIsPlaying(!isPlaying);
     }
   };
-
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-    };
-  }, []);
 
   return (
-    <div className="fixed bottom-5 right-5 z-40">
+    <div className="fixed bottom-6 left-6 z-50">
+      {/* 
+        A tag audio busca o arquivo direto da pasta public.
+        O atributo loop faz a música reiniciar automaticamente ao terminar.
+      */}
+      <audio ref={audioRef} src="/musica-noiva.mp3" loop />
+      
       <button
-        type="button"
-        onClick={toggleMusic}
-        className={`group flex items-center gap-2 px-3.5 py-2 rounded-full backdrop-blur-md transition-all duration-300 shadow-md text-xs font-medium ${
-          isPlaying
-            ? 'bg-[#2E4F75] text-white ring-2 ring-[#7095BF]/40'
-            : 'bg-white/90 text-[#3A5D85] border border-[#CBDDEC] hover:bg-white'
-        }`}
-        aria-label={isPlaying ? 'Pausar música ambiente' : 'Tocar música ambiente'}
+        onClick={togglePlay}
+        className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2.5 rounded-full shadow-[0_4px_14px_rgba(58,93,133,0.15)] border border-[#D5E3F0] text-[#3A5D85] hover:bg-[#F0F5FA] hover:-translate-y-1 transition-all"
+        aria-label="Tocar música ambiente"
       >
         {isPlaying ? (
           <>
-            <Volume2 className="w-3.5 h-3.5 animate-pulse text-blue-200" />
-            <span>♫ Música: Ligada</span>
+            <VolumeX className="w-4 h-4" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#728BA6]">Pausar</span>
           </>
         ) : (
           <>
-            <Music className="w-3.5 h-3.5 text-[#5A80A8]" />
-            <span>♫ Música</span>
+            <Music className="w-4 h-4" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#3A5D85]">Música</span>
           </>
         )}
       </button>
